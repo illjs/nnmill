@@ -35,8 +35,8 @@ int main (const int argc, const char **argv) {
   // why does setting up this channel make it happen? (try commenting it out)
   chan ch = chmake(int, 0);
 
-  nn_bind (deva,    "tcp://127.0.0.1:5555");
-  nn_connect (devb, "tcp://127.0.0.1:5555");
+  nn_bind (deva,    "ipc://da");
+  nn_connect (devb, "ipc://da");
   nn_sleep (50);
 
   go(sender(deva, ch));
