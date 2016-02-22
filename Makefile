@@ -1,4 +1,4 @@
-.PHONY: run install tcp
+.PHONY: run install tcp ipc
 
 LIB=$(shell pwd)/opt
 CFLAGS=-I$(LIB)/include -I$(LIB)/include/nanomsg -O3
@@ -24,3 +24,7 @@ run: inproccoroutines.c
 tcp: tcp/twocoros.c
 	cc -o nntcpcoros tcp/twocoros.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
 	./nntcpcoros
+
+ipc: ipc/twocoros.c
+	cc -o nnipccoros ipc/twocoros.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
+	./nnipccoros
