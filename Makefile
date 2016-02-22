@@ -1,4 +1,4 @@
-.PHONY: run install
+.PHONY: run install tcp
 
 LIB=$(shell pwd)/opt
 CFLAGS=-I$(LIB)/include -I$(LIB)/include/nanomsg -O3
@@ -8,10 +8,6 @@ LIBMILL=$(LIB)/lib/libmill.a
 
 all: install
 
-run: inproccoroutines.c
-	cc -o coros inproccoroutines.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
-	./coros
-
 install:
 	@echo libraries will install now into $(shell pwd)/opt/lib
 	sleep 2 && echo ...
@@ -20,3 +16,11 @@ install:
 	rm -rf libmill && git clone --depth 1 git@github.com:nanomsg/nanomsg.git
 	cd nanomsg && ./autogen.sh && ./configure --prefix=$(LIB) && make && make install
 	rm -rf nanomsg
+
+run: inproccoroutines.c
+	cc -o coros inproccoroutines.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
+	./coros
+
+tcp: tcp/twocoros.c
+	cc -o nntcpcoros tcp/twocoros.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
+	./nntcpcoros
