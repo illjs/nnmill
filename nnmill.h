@@ -1,7 +1,11 @@
 #ifndef NNMILL_H
 #define NNMILL_H
 
-#include <libmill.h>
+#include <stdio.h>
+#include <assert.h>
+
+#include "nn.h"
+#include "libmill.h"
 
 struct nn_mill_msg {
   int size;

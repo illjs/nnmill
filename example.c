@@ -1,8 +1,6 @@
-#include <stdio.h>
-#include <assert.h>
-#include <nanomsg/nn.h>
-#include <nanomsg/pair.h>
-#include "nnmill.h"
+#include "nnmill.c"
+#include "pair.h"
+#include "inproc.h"
 
 static void coroutine senderex(chan ch) {
   struct nn_mill_msg msg;

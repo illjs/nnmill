@@ -20,6 +20,6 @@ git clone https://github.com/reqshark/nnmill
 cd nnmill
 make
 
-# compile/exec inproccoroutines.c file
+# compile/exec example.c
 make run
 ```

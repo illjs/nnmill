@@ -1,32 +1,14 @@
-#include <stdio.h>
-#include <nanomsg/nn.h>
-#include <nanomsg/pair.h>
-#include <libmill.h>
 
 #include "nnmill.h"
 
 static int nn_mill_getfd (int s) {
   int rc, fd;
   size_t fdsz = sizeof fd;
-  
+
   if ( nn_getsockopt (s, NN_SOL_SOCKET, NN_RCVFD, &fd, &fdsz) != 0 )
     return -1;
 
   /* TODO: we might as well return both FDs, NN_SNDFD too */
-  return fd;
-}
-
-
-/* nn_mill_getfd is simpler than this, also here using mill's fdclean(int fd) */
-static int getfd (int s) {
-  fd_set pollset;
-  int fd;
-  size_t fdsz = sizeof (fd);
-  
-  FD_ZERO (&pollset);
-  nn_getsockopt (s, NN_SOL_SOCKET, NN_RCVFD, &fd, &fdsz);
-  
-  fdclean(fd);
   return fd;
 }
 
