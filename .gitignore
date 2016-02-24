@@ -1,5 +1,6 @@
 node_modules
 opt
-coros
-nnipccoros
-nntcpcoros
+inproc
+tcp
+ipc
+da

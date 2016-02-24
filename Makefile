@@ -1,4 +1,4 @@
-.PHONY: run install tcp ipc
+.PHONY: run install check test
 
 LIB=$(shell pwd)/opt
 CFLAGS=-I$(LIB)/include -I$(LIB)/include/nanomsg -O3
@@ -10,21 +10,22 @@ all: install
 
 install:
 	@echo libraries will install now into $(shell pwd)/opt/lib
-	sleep 2 && echo ...
+	sleep 2; ...
 	git clone --depth 1 git@github.com:sustrik/libmill.git
 	cd libmill && ./autogen.sh && ./configure --prefix=$(LIB) && make && make install
 	rm -rf libmill && git clone --depth 1 git@github.com:nanomsg/nanomsg.git
 	cd nanomsg && ./autogen.sh && ./configure --prefix=$(LIB) && make && make install
 	rm -rf nanomsg
 
-run: inproccoroutines.c
-	cc -o coros inproccoroutines.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
-	./coros
+check:
+	cc -o inproc test/inproc.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
+	cc -o ipc test/ipc.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
+	cc -o tcp test/tcp.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
+	./inproc && ./ipc && ./tcp && rm da inproc ipc tcp
+	@echo verified consistent behavior among common transports
 
-tcp: tcp/twocoros.c
-	cc -o nntcpcoros tcp/twocoros.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
-	./nntcpcoros
+run: example.c
+	cc -o example example.c $(CFLAGS) $(NANOMSG) $(LIBMILL) $(LDFLAGS)
+	./example
 
-ipc: ipc/twocoros.c
-	cc -o nnipccoros ipc/twocoros.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
-	./nnipccoros
+test: check
