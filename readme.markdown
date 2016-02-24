@@ -1,5 +1,8 @@
 # libmill + nanomsg experiment
-use a linux for this.
+supported operating systems:
+- [x] linux
+- [x] osx
+- [ ] iOS
 
 makefile pulls down and builds libmill/nanomsg into a new opt prefix dir:
 

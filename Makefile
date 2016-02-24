@@ -23,10 +23,17 @@
 .PHONY: run install check test
 
 LIB=$(shell pwd)/opt
-CFLAGS=-I$(LIB)/include -I$(LIB)/include/nanomsg -O3
-LDFLAGS=-lanl -lrt -lpthread
-NANOMSG=$(LIB)/lib/libnanomsg.a
-LIBMILL=$(LIB)/lib/libmill.a
+nanomsg=-Wno-implicit-function-declaration $(LIB)/lib/libnanomsg.a
+libmill=$(LIB)/lib/libmill.a
+includes=-I$(LIB)/include -I$(LIB)/include/nanomsg
+
+ifeq ($(shell uname -s), Darwin)
+  flags=$(nanomsg) $(libmill) $(includes)
+else
+  flags=$(nanomsg) $(libmill) -lanl -lrt -lpthread $(includes) -O3
+endif
+
+
 
 all: install
 
@@ -34,20 +41,20 @@ install:
 	@echo libraries will install now into $(shell pwd)/opt/lib
 	sleep 2; rm -rf opt
 	git clone --depth 1 git@github.com:sustrik/libmill.git
-	cd libmill && ./autogen.sh && ./configure --prefix=$(LIB) && make && make install
+	cd libmill && ./autogen.sh && ./configure --disable-shared --prefix=$(LIB) && make && make install
 	rm -rf libmill && git clone --depth 1 git@github.com:nanomsg/nanomsg.git
-	cd nanomsg && ./autogen.sh && ./configure --prefix=$(LIB) && make && make install
+	cd nanomsg && ./autogen.sh && ./configure --disable-shared --prefix=$(LIB) && make && make install
 	rm -rf nanomsg
 
 check:
-	cc -o inproc test/inproc.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
-	cc -o ipc test/ipc.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
-	cc -o tcp test/tcp.c $(NANOMSG) $(LIBMILL) $(LDFLAGS) $(CFLAGS)
+	cc -o inproc test/inproc.c $(flags)
+	cc -o ipc test/ipc.c $(flags)
+	cc -o tcp test/tcp.c $(flags)
 	./inproc && ./ipc && ./tcp && rm da inproc ipc tcp
 	@echo verified consistent behavior among common transports
 
 run: example.c
-	cc -o example example.c $(CFLAGS) $(NANOMSG) $(LIBMILL) $(LDFLAGS)
+	cc -o example example.c $(flags)
 	./example
 
 test: check
