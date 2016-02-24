@@ -24,6 +24,13 @@
 
 */
 
+#include <stdio.h>
+#include <string.h>
+
+#include "libmill.h"
+#include "nn.h"
+#include "pair.h"
+
 coroutine void sender (int s, chan ch) {
   int i = 26;
   char msg[256];

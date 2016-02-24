@@ -30,7 +30,6 @@
 #include "libmill.h"
 #include "nn.h"
 #include "pair.h"
-#include "tcp.h"
 
 coroutine void sender (int s, chan ch) {
   int i = 26;
