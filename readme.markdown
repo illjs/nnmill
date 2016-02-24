@@ -5,13 +5,20 @@ makefile pulls down and builds libmill/nanomsg into a new opt prefix dir:
 
 ```sh
 .
-├── inproccoroutines.c
+├── AUTHORS
+├── example.c
 ├── Makefile
+├── nnmill.c
+├── nnmill.h
 ├── opt
 │   ├── bin
 │   ├── include
 │   └── lib
-└── readme.markdown
+├── readme.markdown
+└── test
+    ├── inproc.c
+    ├── ipc.c
+    └── tcp.c
 ```
 
 clone and run
