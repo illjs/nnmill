@@ -41,9 +41,9 @@ install:
 	@echo libraries will install now into $(shell pwd)/opt/lib
 	sleep 2; rm -rf opt
 	git clone --depth 1 git@github.com:sustrik/libmill.git
-	cd libmill && ./autogen.sh && ./configure --disable-shared --prefix=$(LIB) && make && make install
+	cd libmill && ./autogen.sh && ./configure --disable-shared --prefix=$(LIB) && make -j 8 && make install
 	rm -rf libmill && git clone --depth 1 git@github.com:nanomsg/nanomsg.git
-	cd nanomsg && ./autogen.sh && ./configure --disable-shared --prefix=$(LIB) && make && make install
+	cd nanomsg && ./autogen.sh && ./configure --disable-shared --prefix=$(LIB) && make -j 8 && make install
 	rm -rf nanomsg
 
 check:
