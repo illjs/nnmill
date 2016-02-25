@@ -28,23 +28,48 @@
 #include "pair.h"
 #include "inproc.h"
 
-static void coroutine senderex(chan ch) {
+chan endch;
+
+static void coroutine senderex(int s, chan ch) {
   struct nn_mill_msg msg;
+  int count = 0;
 
   for(;;) {
     msg.msg = "test";
     msg.size = 4;
     chs(ch, struct nn_mill_msg, msg);
+
+    count++;
+
+    if (count == 5)
+      break;
+
     msleep(now() + 1000);
   }
+
+  nn_mill_detach(s);
+  chs(endch, int, 1);
 }
 
-static void coroutine receiverex(chan ch)
+static void coroutine receiverex(int s, chan ch)
 {
+  int complete = false;
   struct nn_mill_msg msg;
   for(;;) {
-    msg = chr(ch, struct nn_mill_msg);
-    printf("msg: %.*s\n", msg.size, msg.msg);
+    choose {
+      in(ch, struct nn_mill_msg, msg): {
+        printf("msg: %.*s\n", msg.size, msg.msg);
+      }
+      deadline(now() + 3000): {
+        nn_mill_detach(s);
+        chs(endch, int, 1);
+        complete = true;
+      }
+      end
+    }
+
+    if (complete)
+      break;
   }
 }
 
@@ -54,7 +79,8 @@ int main(int argc, char *argv[])
   chan snd = chmake(struct nn_mill_msg, 0);
   chan rcv2 = chmake(struct nn_mill_msg, 0);
   chan snd2 = chmake(struct nn_mill_msg, 0);
-  chan endch = chmake(int, 0);
+  endch = chmake(int, 0);
+
   int s = nn_socket(AF_SP, NN_PAIR);
   int s2 = nn_socket(AF_SP, NN_PAIR);
   int rc;
@@ -67,10 +93,11 @@ int main(int argc, char *argv[])
   rc = nn_mill_attach(s2, rcv2, snd2);
   assert(rc == 0);
 
-  go(senderex(snd));
-  go(receiverex(rcv2));
+  go(senderex(s, snd));
+  go(receiverex(s2, rcv2));
 
   // never exit
+  chr(endch, int);
   chr(endch, int);
 
   return 0;

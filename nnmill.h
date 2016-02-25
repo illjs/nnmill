@@ -37,5 +37,6 @@ struct nn_mill_msg {
 };
 
 int nn_mill_attach(int s, chan inch, chan outchan);
+int nn_mill_detach(int s);
 
 #endif
