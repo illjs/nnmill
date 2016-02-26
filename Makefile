@@ -20,7 +20,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 
-.PHONY: run install check test
+.PHONY: run install check test segfault
 
 LIB=$(shell pwd)/opt
 nanomsg=-Wno-implicit-function-declaration $(LIB)/lib/libnanomsg.a
@@ -56,5 +56,9 @@ check:
 run: example.c
 	cc -o example example.c $(flags)
 	./example
+
+segfault: segfault
+	cc -o segfault segfault.c
+	./segfault
 
 test: check
