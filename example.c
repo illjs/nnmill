@@ -24,62 +24,77 @@
 
 */
 
-#include "nnmill.c"
-#include "pair.h"
-#include "inproc.h"
+#include <stdio.h>
+#include <nanomsg/nn.h>
+#include <nanomsg/pair.h>
+#include <libmill.h>
 
-chan endch;
+struct nn_mill_msg {
+  int size;
+  char *msg;
+};
 
-static void coroutine senderex(int s, chan ch) {
-  struct nn_mill_msg msg;
-  int count = 0;
+static int nn_mill_getfd (int s) {
+  int rc, fd;
+  size_t fdsz = sizeof fd;
 
-  for(;;) {
-    msg.msg = "test";
-    msg.size = 4;
-    chs(ch, struct nn_mill_msg, msg);
+  if ( nn_getsockopt (s, NN_SOL_SOCKET, NN_RCVFD, &fd, &fdsz) != 0 )
+    return -1;
 
-    count++;
-
-    if (count == 5)
-      break;
-
-    msleep(now() + 1000);
-  }
-
-  nn_mill_detach(s);
-  chs(endch, int, 1);
+  /* TODO: we might as well return both FDs, NN_SNDFD too */
+  return fd;
 }
 
-static void coroutine receiverex(int s, chan ch)
-{
-  int complete = false;
-  struct nn_mill_msg msg;
+static coroutine void receiver(int s, chan inch) {
+  int fd = nn_mill_getfd(s);
+  struct nn_pollfd pfd[1];
+  int rc;
+
   for(;;) {
-    choose {
-      in(ch, struct nn_mill_msg, msg): {
-        printf("msg: %.*s\n", msg.size, msg.msg);
-      }
-      deadline(now() + 3000): {
-        nn_mill_detach(s);
-        chs(endch, int, 1);
-        complete = true;
-      }
-      end
+    int events = fdwait(fd, FDW_IN, -1);
+    if (!(events & FDW_IN))
+      continue;
+
+    pfd[0] = (struct nn_pollfd) {
+      .fd = s,
+      .events = NN_POLLIN
+    };
+    nn_poll (pfd, 1, -1);
+
+    if (!(pfd[0].revents & NN_POLLIN))
+      continue;
+
+    for (;;) {
+      char *buf;
+      struct nn_mill_msg msg;
+      rc = nn_recv (s, &buf, NN_MSG, NN_DONTWAIT);
+
+      if (rc <= 0)
+        break;
+
+      msg.size = rc;
+      msg.msg = buf;
+
+      chs(inch, struct nn_mill_msg, msg);
     }
 
-    if (complete)
-      break;
   }
 }
 
-int main(int argc, char *argv[])
-{
+static coroutine void sender(int s, chan outch) {
+  for(;;) {
+    struct nn_mill_msg msg;
+    msg = chr(outch, struct nn_mill_msg);
+    nn_send(s, msg.msg, msg.size, NN_DONTWAIT);
+  }
+}
+
+int main(int argc, char *argv[]) {
+  // setup
   chan rcv = chmake(struct nn_mill_msg, 0);
   chan snd = chmake(struct nn_mill_msg, 0);
   chan rcv2 = chmake(struct nn_mill_msg, 0);
   chan snd2 = chmake(struct nn_mill_msg, 0);
-  endch = chmake(int, 0);
 
   int s = nn_socket(AF_SP, NN_PAIR);
   int s2 = nn_socket(AF_SP, NN_PAIR);
@@ -88,17 +103,26 @@ int main(int argc, char *argv[])
   nn_bind(s, "tcp://127.0.0.1:7458");
   nn_connect(s2, "tcp://127.0.0.1:7458");
 
-  rc = nn_mill_attach(s, rcv, snd);
-  assert(rc == 0);
-  rc = nn_mill_attach(s2, rcv2, snd2);
-  assert(rc == 0);
-
-  go(senderex(s, snd));
-  go(receiverex(s2, rcv2));
-
-  // never exit
-  chr(endch, int);
-  chr(endch, int);
-
+  // start
+  // receiver
+  go(receiver(s, rcv));
+  go(sender(s2, snd2));
+  // use
+  struct nn_mill_msg msg;
+  while (1) {
+    choose {
+      in(rcv, struct nn_mill_msg, msg): {
+        printf("received message: %.*s\n", msg.size, msg.msg);
+      }
+      deadline(now() + 1000): {
+        msg.msg = "test";
+        msg.size = 4;
+        chs(snd2, struct nn_mill_msg, msg);
+      }
+      end
+    }
+  }
+  // stop
+  // clean exit
   return 0;
 }
