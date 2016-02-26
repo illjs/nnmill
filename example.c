@@ -25,6 +25,8 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #include <nanomsg/nn.h>
 #include <nanomsg/pair.h>
 #include <libmill.h>
@@ -45,13 +47,18 @@ static int nn_mill_getfd (int s) {
   return fd;
 }
 
-static coroutine void receiver(int s, chan inch) {
+static coroutine void receiver(int s, chan inch, int *stopfdwait) {
   int fd = nn_mill_getfd(s);
   struct nn_pollfd pfd[1];
   int rc;
 
   for(;;) {
-    int events = fdwait(fd, FDW_IN, -1);
+    int events = fdwait(fd, FDW_IN, now() + 200);
+    if (*stopfdwait == true) {
+      printf("*stopfdwait == true\n");
+      break;
+    }
+
     if (!(events & FDW_IN))
       continue;
 
@@ -79,6 +86,9 @@ static coroutine void receiver(int s, chan inch) {
     }
 
   }
+
+  printf("int stopfdwait: %d\n", *stopfdwait);
+  exit(0);
 }
 
 static coroutine void sender(int s, chan outch) {
@@ -104,15 +114,21 @@ int main(int argc, char *argv[]) {
   nn_connect(s2, "tcp://127.0.0.1:7458");
 
   // start
+  int stopfdwait = false;
   // receiver
-  go(receiver(s, rcv));
+  go(receiver(s, rcv, &stopfdwait));
   go(sender(s2, snd2));
   // use
   struct nn_mill_msg msg;
+  int cnt = 0;
   while (1) {
     choose {
       in(rcv, struct nn_mill_msg, msg): {
         printf("received message: %.*s\n", msg.size, msg.msg);
+        cnt++;
+        if (cnt == 5) {
+          stopfdwait = true;
+        }
       }
       deadline(now() + 1000): {
         msg.msg = "test";
