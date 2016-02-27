@@ -1,4 +1,5 @@
-# libmill + nanomsg experiment
+# nnmill
+### libmill coroutines and fd events for nanomsg sockets
 supported operating systems:
 - [x] linux
 - [x] osx (`brew install autoconf libtool automake pkg-config`)
