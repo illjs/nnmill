@@ -1,7 +1,7 @@
 # libmill + nanomsg experiment
 supported operating systems:
 - [x] linux
-- [x] osx
+- [x] osx (`brew install autoconf libtool automake pkg-config`)
 - [ ] iOS
 
 makefile pulls down and builds libmill/nanomsg into a new opt prefix dir:
