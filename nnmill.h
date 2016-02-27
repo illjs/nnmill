@@ -1,6 +1,7 @@
 /*
 
   Copyright (c) 2016 Fatih Kaya
+  Copyright (c) 2016 Bent Cardan
 
   Permission is hereby granted, free of charge, to any person obtaining a copy
   of this software and associated documentation files (the "Software"),
@@ -25,18 +26,7 @@
 #ifndef NNMILL_H
 #define NNMILL_H
 
-#include <stdio.h>
-#include <assert.h>
-
-#include "nn.h"
-#include "libmill.h"
-
-struct nn_mill_msg {
-  int size;
-  char *msg;
-};
-
-int nn_mill_attach(int s, chan inch, chan outchan);
-int nn_mill_detach(int s);
+int nm_send (int s, const void *buf, size_t len, int flags, int64_t deadline);
+int nm_recv (int s, void *buf, size_t len, int flags, int64_t deadline);
 
 #endif
