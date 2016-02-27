@@ -26,6 +26,9 @@ LIB=$(shell pwd)/opt
 nanomsg=-Wno-implicit-function-declaration $(LIB)/lib/libnanomsg.a
 libmill=$(LIB)/lib/libmill.a
 includes=-I$(LIB)/include -I$(LIB)/include/nanomsg
+clone=git clone --depth 1 git@github.com:
+args=--disable-shared --prefix=$(LIB)
+build=./autogen.sh && ./configure $(args) && make -j 8 && make install
 
 ifeq ($(shell uname -s), Darwin)
   flags=$(nanomsg) $(libmill) $(includes)
@@ -39,12 +42,11 @@ all: install
 
 install:
 	@echo libraries will install now into $(shell pwd)/opt/lib
-	sleep 2; rm -rf opt
-	git clone --depth 1 git@github.com:sustrik/libmill.git
-	cd libmill && ./autogen.sh && ./configure --disable-shared --prefix=$(LIB) && make -j 8 && make install
-	rm -rf libmill && git clone --depth 1 git@github.com:nanomsg/nanomsg.git
-	cd nanomsg && ./autogen.sh && ./configure --disable-shared --prefix=$(LIB) && make -j 8 && make install
-	rm -rf nanomsg
+	sleep 2; rm -rf opt build; mkdir build
+	cd build; $(clone)sustrik/libmill.git && $(clone)nanomsg/nanomsg.git
+	cd build/libmill && $(build)
+	cd build/nanomsg && $(build)
+	rm -rf build
 
 check:
 	cc -o inproc test/inproc.c $(flags)
