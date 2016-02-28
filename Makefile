@@ -50,7 +50,7 @@ check:
 	cc -o inproc test/inproc.c $(flags)
 	cc -o ipc test/ipc.c $(flags)
 	cc -o tcp test/tcp.c $(flags)
-	./inproc && ./ipc && ./tcp && rm da inproc ipc tcp
+	./inproc && ./ipc && ./tcp && rm inproc ipc tcp
 	@echo verified consistent behavior among common transports
 
 run: example.c
