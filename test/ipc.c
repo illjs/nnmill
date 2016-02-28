@@ -43,11 +43,16 @@ static coroutine void rcvr (int s, chan c) {
   for(;;) {
     buf[nm_recv (s, buf, 4, 0, -1)] = '\0';
     if (++i == 10) {
-      printf("recevied: %s %d\n", buf, i);
+      printf("recevied: %d %s\n", i, buf);
       chs(c, int, 10);
       chclose(c);
     }
   }
+}
+
+static void cleanup (int *s, int sz) {
+  while (sz--)
+    nn_close(s[sz]);
 }
 
 int main (const int argc, const char **argv) {
@@ -77,10 +82,8 @@ int main (const int argc, const char **argv) {
 
   chr(pubsubch, int);
 
-  nn_close(pr);
-  nn_close(pr2);
-  nn_close(pub);
-  nn_close(sub);
+  int close[4] = { pr, pr2, pub, sub };
+  cleanup(close, 4);
 
   return 0;
 }
