@@ -25,47 +25,57 @@
 */
 
 #include <stdio.h>
-#include <string.h>
+#include <assert.h>
+#include <libmill.h>
+#include <nanomsg/nn.h>
+#include <nanomsg/pair.h>
+#include <nanomsg/pubsub.h>
+#include "../nnmill.c"
 
-#include "libmill.h"
-#include "nn.h"
-#include "pair.h"
-
-coroutine void sender (int s, chan ch) {
-  int i = 26;
-  char msg[256];
-  char a[] = "I am sending #";
-  char b[] = " msg now";
-
-  while (i--) {
-    snprintf(msg, sizeof msg, "%s%d%s", a, i, b);
-    nn_send (s, msg, strlen(msg), 0);
-  }
+static coroutine void sndr (int s) {
+  for(;;)
+    nm_send (s, "test", 4, 0, -1);
 }
 
-coroutine void recvr (int s, chan ch) {
-  int i = 26, rc;
-  while (i) {
-    char buf[256] = { 0 };
-    rc = nn_recv (s, &buf, 256, 0);
-    printf("got %d bytes: %s\n", rc, buf); i--;
+static coroutine void rcvr (int s, chan c) {
+  int i = 0;
+  char buf[5];
+  for(;;) {
+    buf[nm_recv (s, buf, 4, 0, -1)] = '\0';
+    if (++i == 10) {
+      printf("recevied: %s %d\n", buf, i);
+      chs(c, int, 10);
+      chclose(c);
+    }
   }
-  printf("\n\nrecvr coroutine collected 25 unique msgs, of %d bytes\n\n", rc);
 }
 
 int main (const int argc, const char **argv) {
-  int deva = nn_socket (AF_SP_RAW, NN_PAIR);
-  int devb = nn_socket (AF_SP_RAW, NN_PAIR);
 
-  // why does setting up this channel make it happen? (try commenting it out)
-  chan ch = chmake(int, 0);
+  int pr = nn_socket(AF_SP, NN_PAIR);
+  int pr2 = nn_socket(AF_SP, NN_PAIR);
 
-  nn_bind (deva,    "tcp://127.0.0.1:5555");
-  nn_connect (devb, "tcp://127.0.0.1:5555");
-  nn_sleep (50);
+  nn_bind(pr, "tcp://127.0.0.1:7459");
+  nn_connect(pr2, "tcp://127.0.0.1:7459");
+  chan prch = chmake(int, 0);
 
-  go(sender(deva, ch));
-  go(recvr(devb, ch));
+  go(sndr(pr));
+  go(rcvr(pr2, prch));
+
+  chr(prch, int);
+
+  int pub = nn_socket(AF_SP, NN_PUB);
+  int sub = nn_socket(AF_SP, NN_SUB);
+  assert (nn_setsockopt (sub, NN_SUB, NN_SUB_SUBSCRIBE, "", 0) == 0);
+
+  nn_bind(pub, "tcp://127.0.0.1:7460");
+  nn_connect(sub, "tcp://127.0.0.1:7460");
+  chan pubsubch = chmake(int, 0);
+
+  go(sndr(pub));
+  go(rcvr(sub, pubsubch));
+
+  chr(pubsubch, int);
 
   return 0;
 }
