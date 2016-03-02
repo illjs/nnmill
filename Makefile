@@ -25,15 +25,15 @@
 LIB=$(shell pwd)/opt
 nanomsg=-Wno-implicit-function-declaration $(LIB)/lib/libnanomsg.a
 libmill=$(LIB)/lib/libmill.a
-includes=-I$(LIB)/include -I$(LIB)/include/nanomsg
+includes=-I$(LIB)/include -I$(LIB)/include/nanomsg -std=gnu99
 clone=git clone --depth 1 https://github.com/
 args=--disable-shared --prefix=$(LIB)
 build=./autogen.sh && ./configure $(args) && make -j 8 && make install
 
 ifeq ($(shell uname -s), Darwin)
-  flags=$(nanomsg) $(libmill) $(includes) -std=c99
+  flags=$(nanomsg) $(libmill) $(includes)
 else
-  flags=$(nanomsg) $(libmill) -lanl -lrt -lpthread $(includes) -std=c99 -O3
+  flags=$(nanomsg) $(libmill) -lanl -lrt -lpthread $(includes) -fvisibility=hidden -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -D_GNU_SOURCE -O3
 endif
 
 
