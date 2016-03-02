@@ -26,10 +26,13 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
+
 #include <libmill.h>
 #include <nanomsg/nn.h>
 #include <nanomsg/pair.h>
 #include <nanomsg/pubsub.h>
+
 #include "../nnmill.c"
 
 static coroutine void sndr (int s, const char *msg) {

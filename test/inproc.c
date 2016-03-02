@@ -71,6 +71,7 @@ int main (const int argc, const char **argv) {
 
   chr(prch, int);
   chr(prch, int);
+  chclose(prch);
 
   int pub = nn_socket (AF_SP, NN_PUB);
   int sub = nn_socket (AF_SP, NN_SUB);
@@ -86,6 +87,7 @@ int main (const int argc, const char **argv) {
 
   chr(pubsubch, int);
   chr(pubsubch, int);
+  chclose(pubsubch);
 
   int close[4] = { pr, pr2, pub, sub };
   cleanup(close, 4);
