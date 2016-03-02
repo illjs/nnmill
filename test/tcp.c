@@ -32,22 +32,27 @@
 #include <nanomsg/pubsub.h>
 #include "../nnmill.c"
 
-static coroutine void sndr (int s) {
+static coroutine void sndr (int s, const char *msg) {
   for(;;)
-    nm_send (s, "test", 4, 0, -1);
+    nm_send (s, msg, strlen(msg), 0, -1);
 }
 
 static coroutine void rcvr (int s, chan c) {
   int i = 0;
-  char buf[5];
+  char buf[64];
   for(;;) {
-    buf[nm_recv (s, buf, 4, 0, -1)] = '\0';
-    if (++i == 10) {
-      printf("recevied: %s %d\n", buf, i);
-      chs(c, int, 10);
+    buf[nm_recv (s, buf, 64, 0, -1)] = '\0';
+    if (++i == 5){
+      printf("recevied: %s %dx\n", buf, i);
+      chs(c, int, 0);
       chclose(c);
     }
   }
+}
+
+static void cleanup (int *s, int sz) {
+  while (sz--)
+    nn_close(s[sz]);
 }
 
 int main (const int argc, const char **argv) {
@@ -55,27 +60,32 @@ int main (const int argc, const char **argv) {
   int pr = nn_socket(AF_SP, NN_PAIR);
   int pr2 = nn_socket(AF_SP, NN_PAIR);
 
-  nn_bind(pr, "tcp://127.0.0.1:7459");
-  nn_connect(pr2, "tcp://127.0.0.1:7459");
+  nn_bind(pr, "tcp://127.0.0.1:5555");
+  nn_connect(pr2, "tcp://127.0.0.1:5555");
+
   chan prch = chmake(int, 0);
 
-  go(sndr(pr));
+  go(sndr(pr, "tcp pair"));
   go(rcvr(pr2, prch));
 
   chr(prch, int);
 
-  int pub = nn_socket(AF_SP, NN_PUB);
-  int sub = nn_socket(AF_SP, NN_SUB);
+  int pub = nn_socket (AF_SP, NN_PUB);
+  int sub = nn_socket (AF_SP, NN_SUB);
   assert (nn_setsockopt (sub, NN_SUB, NN_SUB_SUBSCRIBE, "", 0) == 0);
 
-  nn_bind(pub, "tcp://127.0.0.1:7460");
-  nn_connect(sub, "tcp://127.0.0.1:7460");
-  chan pubsubch = chmake(int, 0);
+  nn_bind (pub, "tcp://127.0.0.1:5556");
+  nn_connect (sub, "tcp://127.0.0.1:5556");
 
-  go(sndr(pub));
+  chan pubsubch = chmake (int, 0);
+
   go(rcvr(sub, pubsubch));
+  go(sndr(pub, "tcp pubsub"));
 
   chr(pubsubch, int);
+
+  int close[4] = { pr, pr2, pub, sub };
+  cleanup(close, 4);
 
   return 0;
 }

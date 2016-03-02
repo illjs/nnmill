@@ -32,19 +32,19 @@
 #include <nanomsg/pubsub.h>
 #include "../nnmill.c"
 
-static coroutine void sndr (int s) {
+static coroutine void sndr (int s, const char *msg) {
   for(;;)
-    nm_send (s, "test", 4, 0, -1);
+    nm_send (s, msg, strlen(msg), 0, -1);
 }
 
 static coroutine void rcvr (int s, chan c) {
   int i = 0;
-  char buf[5];
+  char buf[64];
   for(;;) {
-    buf[nm_recv (s, buf, 4, 0, -1)] = '\0';
-    if (++i == 10) {
-      printf("recevied: %d %s\n", i, buf);
-      chs(c, int, 10);
+    buf[nm_recv (s, buf, 64, 0, -1)] = '\0';
+    if (++i == 5){
+      printf("recevied: %s %dx\n", buf, i);
+      chs(c, int, 0);
       chclose(c);
     }
   }
@@ -62,23 +62,25 @@ int main (const int argc, const char **argv) {
 
   nn_bind(pr, "ipc://pr");
   nn_connect(pr2, "ipc://pr");
+
   chan prch = chmake(int, 0);
 
-  go(sndr(pr));
+  go(sndr(pr, "ipc pair"));
   go(rcvr(pr2, prch));
 
   chr(prch, int);
 
-  int pub = nn_socket(AF_SP, NN_PUB);
-  int sub = nn_socket(AF_SP, NN_SUB);
+  int pub = nn_socket (AF_SP, NN_PUB);
+  int sub = nn_socket (AF_SP, NN_SUB);
   assert (nn_setsockopt (sub, NN_SUB, NN_SUB_SUBSCRIBE, "", 0) == 0);
 
-  nn_bind(pub, "ipc://pubsub");
-  nn_connect(sub, "ipc://pubsub");
-  chan pubsubch = chmake(int, 0);
+  nn_bind (pub, "ipc://pubsub");
+  nn_connect (sub, "ipc://pubsub");
 
-  go(sndr(pub));
+  chan pubsubch = chmake (int, 0);
+
   go(rcvr(sub, pubsubch));
+  go(sndr(pub, "ipc pubsub"));
 
   chr(pubsubch, int);
 

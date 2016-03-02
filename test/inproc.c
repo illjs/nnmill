@@ -26,46 +26,69 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
+#include <libmill.h>
+#include <nanomsg/nn.h>
+#include <nanomsg/pair.h>
+#include <nanomsg/pubsub.h>
+#include "../nnmill.c"
 
-#include "libmill.h"
-#include "nn.h"
-#include "pair.h"
+static coroutine void sndr (int s, const char *msg, chan endch) {
+  for(int count = 0; count < 5; count++)
+    nm_send (s, msg, strlen(msg), 0, -1);
 
-coroutine void sender (int s, chan ch) {
-  int i = 26;
-  char msg[256];
-  char a[] = "I am sending #";
-  char b[] = " msg now";
-
-  while (i--) {
-    snprintf(msg, sizeof msg, "%s%d%s", a, i, b);
-    nn_send (s, msg, strlen(msg), 0);
-  }
+  chs(endch, int, 1);
 }
 
-coroutine void recvr (int s, chan ch) {
-  int i = 26, rc;
-  while (i) {
-    char buf[256] = { 0 };
-    rc = nn_recv (s, &buf, 256, 0);
-    printf("got %d bytes: %s\n", rc, buf); i--;
-  }
-  printf("\n\nrecvr coroutine collected 25 unique msgs, of %d bytes\n\n", rc);
+static coroutine void rcvr (int s, chan endch) {
+  char buf[64];
+  int count = 0;
+
+  for(; count < 5; count++)
+    buf[nm_recv (s, buf, 64, 0, -1)] = '\0';
+
+  printf("recevied: %s %dx\n", buf, count);
+  chs(endch, int, 1);
+}
+
+static void cleanup (int *s, int sz) {
+  while (sz--)
+    nn_close(s[sz]);
 }
 
 int main (const int argc, const char **argv) {
-  int deva = nn_socket (AF_SP_RAW, NN_PAIR);
-  int devb = nn_socket (AF_SP_RAW, NN_PAIR);
 
-  // why does setting up this channel make it happen? (try commenting it out)
-  chan ch = chmake(int, 0);
+  int pr = nn_socket(AF_SP, NN_PAIR);
+  int pr2 = nn_socket(AF_SP, NN_PAIR);
 
-  nn_bind (deva,    "inproc://yo");
-  nn_connect (devb, "inproc://yo");
-  nn_sleep (50);
+  nn_bind(pr, "inproc://pr");
+  nn_connect(pr2, "inproc://pr");
 
-  go(sender(deva, ch));
-  go(recvr(devb, ch));
+  chan prch = chmake(int, 0);
+
+  go(sndr(pr, "inproc pair", prch));
+  go(rcvr(pr2, prch));
+
+  chr(prch, int);
+  chr(prch, int);
+
+  int pub = nn_socket (AF_SP, NN_PUB);
+  int sub = nn_socket (AF_SP, NN_SUB);
+  assert (nn_setsockopt (sub, NN_SUB, NN_SUB_SUBSCRIBE, "", 0) == 0);
+
+  nn_bind (pub, "inproc://pubsub");
+  nn_connect (sub, "inproc://pubsub");
+
+  chan pubsubch = chmake (int, 0);
+
+  go(rcvr(sub, pubsubch));
+  go(sndr(pub, "inproc pubsub", pubsubch));
+
+  chr(pubsubch, int);
+  chr(pubsubch, int);
+
+  int close[4] = { pr, pr2, pub, sub };
+  cleanup(close, 4);
 
   return 0;
 }
