@@ -1,4 +1,5 @@
 # nnmill
+[![Build Status](https://travis-ci.org/reqshark/nnmill.svg?branch=master)](https://travis-ci.org/reqshark/nnmill)
 ### libmill coroutines and fd events for nanomsg sockets
 supported operating systems:
 - [x] linux
