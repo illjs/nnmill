@@ -1,0 +1,24 @@
+sudo: false
+
+language: c
+
+os:
+  - osx
+  - linux
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-4.8
+      - g++-4.8
+
+install:
+  - make
+
+script:
+  - make check
+
+notifications:
+  email: false
