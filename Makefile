@@ -31,9 +31,9 @@ args=--disable-shared --prefix=$(LIB)
 build=./autogen.sh && ./configure $(args) && make -j 8 && make install
 
 ifeq ($(shell uname -s), Darwin)
-  flags=$(nanomsg) $(libmill) $(includes)
+  flags=$(nanomsg) $(libmill) $(includes) -std=gnu99
 else
-  flags=$(nanomsg) $(libmill) -lanl -lrt -lpthread $(includes) -O3
+  flags=$(nanomsg) $(libmill) -lanl -lrt -lpthread $(includes) -std=gnu99 -O3
 endif
 
 
