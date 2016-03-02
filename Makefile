@@ -26,7 +26,7 @@ LIB=$(shell pwd)/opt
 nanomsg=-Wno-implicit-function-declaration $(LIB)/lib/libnanomsg.a
 libmill=$(LIB)/lib/libmill.a
 includes=-I$(LIB)/include -I$(LIB)/include/nanomsg
-clone=git clone --depth 1 git@github.com:
+clone=git clone --depth 1 https://github.com/
 args=--disable-shared --prefix=$(LIB)
 build=./autogen.sh && ./configure $(args) && make -j 8 && make install
 
