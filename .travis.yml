@@ -6,13 +6,17 @@ os:
   - osx
   - linux
 
+compiler:
+  - gcc
+  - clang
+
 addons:
   apt:
     sources:
       - ubuntu-toolchain-r-test
     packages:
       - gcc-4.9
-      - g++-4.9
+      - clang
 
 install:
   - make
