@@ -35,10 +35,16 @@
 
 #include "../nnmill.c"
 
-static coroutine void sndr (int s, const char *msg, chan endch) {
-  for(int count = 0; count < 5; count++)
-    nm_send (s, msg, strlen(msg), 0, -1);
+#define printline() printf("%s - at line: %d\n", __func__, __LINE__)
 
+static coroutine void sndr (int s, const char *msg, chan endch) {
+  printline();
+  for(int count = 0; count < 5; count++) {
+    nm_send (s, msg, strlen(msg), 0, -1);
+    printline();
+  }
+
+  printline();
   chs(endch, int, 1);
 }
 
@@ -46,11 +52,15 @@ static coroutine void rcvr (int s, chan endch) {
   char buf[64];
   int count = 0;
 
-  for(; count < 5; count++)
+  for(; count < 5; count++) {
+    printline();
+    printf("rcvr count: %d | s: %d\n", count, s);
     buf[nm_recv (s, buf, 64, 0, -1)] = '\0';
+  }
 
   printf("recevied: %s %dx\n", buf, count);
   chs(endch, int, 1);
+  printline();
 }
 
 static void cleanup (int *s, int sz) {
@@ -62,18 +72,21 @@ int main (const int argc, const char **argv) {
 
   int pr = nn_socket(AF_SP, NN_PAIR);
   int pr2 = nn_socket(AF_SP, NN_PAIR);
-
+  
   nn_bind(pr, "ipc://pr");
   nn_connect(pr2, "ipc://pr");
-
+  
   chan prch = chmake(int, 0);
-
+  
   go(sndr(pr, "ipc pair", prch));
   go(rcvr(pr2, prch));
-
+  
   chr(prch, int);
   chr(prch, int);
+  
   chclose(prch);
+
+  printf("----------------------------");
 
   int pub = nn_socket (AF_SP, NN_PUB);
   int sub = nn_socket (AF_SP, NN_SUB);
@@ -84,11 +97,14 @@ int main (const int argc, const char **argv) {
 
   chan pubsubch = chmake (int, 0);
 
+  printline();
   go(rcvr(sub, pubsubch));
   go(sndr(pub, "ipc pubsub", pubsubch));
 
   chr(pubsubch, int);
-  //chr(pubsubch, int);
+  printline();
+  chr(pubsubch, int);
+  printline();
   chclose(pubsubch);
 
   int close[4] = { pr, pr2, pub, sub };
