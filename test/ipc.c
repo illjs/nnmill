@@ -72,18 +72,18 @@ int main (const int argc, const char **argv) {
 
   int pr = nn_socket(AF_SP, NN_PAIR);
   int pr2 = nn_socket(AF_SP, NN_PAIR);
-  
+
   nn_bind(pr, "ipc://pr");
   nn_connect(pr2, "ipc://pr");
-  
+
   chan prch = chmake(int, 0);
-  
+
   go(sndr(pr, "ipc pair", prch));
   go(rcvr(pr2, prch));
-  
+
   chr(prch, int);
   chr(prch, int);
-  
+
   chclose(prch);
 
   printf("----------------------------");
@@ -94,6 +94,7 @@ int main (const int argc, const char **argv) {
 
   nn_bind (pub, "ipc://pubsub");
   nn_connect (sub, "ipc://pubsub");
+  msleep(now() + 100);
 
   chan pubsubch = chmake (int, 0);
 
