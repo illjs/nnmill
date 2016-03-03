@@ -25,17 +25,17 @@
 LIB=$(shell pwd)/opt
 nanomsg=-Wno-implicit-function-declaration $(LIB)/lib/libnanomsg.a
 libmill=$(LIB)/lib/libmill.a
+sodium=$(LIB)/lib/libsodium.a
 includes=-I$(LIB)/include -I$(LIB)/include/nanomsg -std=gnu99
 clone=git clone --depth 1 https://github.com/
 args=--disable-shared --prefix=$(LIB)
 build=./autogen.sh && ./configure $(args) && make -j 8 && make install
 
 ifeq ($(shell uname -s), Darwin)
-  flags=$(nanomsg) $(libmill) $(includes)
+  flags=$(nanomsg) $(libmill) $(sodium) $(includes)
 else
-  flags=$(nanomsg) $(libmill) -lanl -lrt -lpthread $(includes) -fvisibility=hidden -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -D_GNU_SOURCE -O3
+  flags=$(sodium) $(nanomsg) $(libmill) -lanl -lrt -lpthread $(includes) -fvisibility=hidden -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -D_GNU_SOURCE -O3
 endif
-
 
 
 all: install
@@ -43,16 +43,21 @@ all: install
 install:
 	@echo libraries will install now into $(shell pwd)/opt/lib
 	sleep 2; rm -rf opt build; mkdir build
-	cd build; $(clone)sustrik/libmill.git && $(clone)nanomsg/nanomsg.git
-	cd build/libmill && $(build) && cd ../nanomsg && $(build)
+	cd build; $(clone)sustrik/libmill.git && $(clone)nanomsg/nanomsg.git && $(clone)jedisct1/libsodium
+	cd build/libmill && $(build) && cd ../nanomsg && $(build) && cd ../libsodium && $(build)
 
 check:
 	cc -o inproc test/inproc.c $(flags)
 	cc -o ipc test/ipc.c $(flags)
 	cc -o tcp test/tcp.c $(flags)
 	cc -o ch test/ch.c $(flags)
-	./inproc && ./ipc && ./tcp && ./ch && rm inproc ipc tcp ch
+	cc -o so test/sodium.c $(flags)
+	./inproc && ./ipc && ./tcp && ./ch && ./so && rm inproc ipc tcp ch so
 	@echo verified consistent behavior among common transports
+
+so:
+	cc -o so test/sodium.c $(flags)
+	./so && rm so
 
 run: example.c
 	cc -o example example.c $(flags)

@@ -35,6 +35,12 @@ make
 make run
 ```
 
+## test
+
+```sh
+make check
+```
+
 ## contributors
 
 <table><tbody>

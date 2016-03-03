@@ -5,6 +5,8 @@ inproc
 tcp
 ipc
 da
+ch
+so
 example
 segfault
 
