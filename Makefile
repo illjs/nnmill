@@ -28,6 +28,7 @@ libmill=$(LIB)/lib/libmill.a
 sodium=$(LIB)/lib/libsodium.a
 includes=-I$(LIB)/include -I$(LIB)/include/nanomsg -std=gnu99
 clone=git clone --depth 1 https://github.com/
+clonenn=git clone https://github.com/nanomsg/nanomsg && cd nanomsg && git checkout 889a28 && cd ..
 args=--disable-shared --prefix=$(LIB)
 build=./autogen.sh && ./configure $(args) && make -j 8 && make install
 
@@ -43,7 +44,7 @@ all: install
 install:
 	@echo libraries will install now into $(shell pwd)/opt/lib
 	sleep 2; rm -rf opt build; mkdir build
-	cd build; $(clone)sustrik/libmill.git && $(clone)nanomsg/nanomsg.git && $(clone)jedisct1/libsodium
+	cd build; $(clone)sustrik/libmill.git && $(clonenn) && $(clone)jedisct1/libsodium
 	cd build/libmill && $(build) && cd ../nanomsg && $(build) && cd ../libsodium && $(build)
 
 check:
